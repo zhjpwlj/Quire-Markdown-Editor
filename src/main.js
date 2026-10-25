@@ -1,7 +1,9 @@
 import './app-shell.css'
+import { installDebugLog } from './debug-log.js'
 
 // Shell only: no storage, no editor, no auth yet (Milestone 1).
 document.getElementById('app').dataset.ready = 'true'
+installDebugLog()
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

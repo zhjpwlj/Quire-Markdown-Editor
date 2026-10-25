@@ -31,6 +31,9 @@ html,
 body {
   margin: 0;
   height: 100%;
+  /* The shell owns the viewport; panes scroll, the document never does. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -62,6 +65,10 @@ body {
 .app-name {
   font-weight: 650;
   letter-spacing: 0.01em;
+  /* Long-press opens the debug log; suppress selection and the iOS callout. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .vault-name {
@@ -156,4 +163,46 @@ body {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.debug-log {
+  position: fixed;
+  inset: auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: 60dvh;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  z-index: 1000;
+}
+
+.debug-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+}
+
+.debug-log-close {
+  padding: 4px 8px;
+  background: transparent;
+  border: 0;
+  color: var(--accent-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.debug-log-body {
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  font-family: var(--font-family-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
