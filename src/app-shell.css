@@ -121,7 +121,7 @@ body {
 
 .workspace {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr) auto;
   min-height: 0;
 }
 
@@ -359,6 +359,115 @@ body {
   cursor: pointer;
 }
 
+.links-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 220px;
+  padding: 16px 12px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  overflow: auto;
+  min-height: 0;
+}
+
+.links-panel[hidden] {
+  display: none;
+}
+
+.links-panel h2 {
+  margin: 0 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.link-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link-item:hover {
+  background: var(--bg-hover);
+}
+
+.link-context {
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-unresolved {
+  color: var(--text-muted);
+  text-decoration: underline dashed;
+}
+
+.link-ambiguous {
+  color: var(--text-muted);
+  text-decoration: underline dotted;
+}
+
+.disambiguation {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  z-index: 900;
+}
+
+.disambiguation button {
+  padding: 7px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disambiguation button:hover {
+  background: var(--bg-hover);
+}
+
+.link-empty {
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .editor-empty p {
   color: var(--text-muted);
   font-size: 14px;
@@ -450,6 +559,10 @@ body {
 
   .preview-host {
     padding: 20px 16px 48px;
+  }
+
+  .links-panel {
+    display: none;
   }
 }
 

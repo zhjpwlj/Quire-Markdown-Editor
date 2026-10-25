@@ -4,6 +4,7 @@ import { installDebugLog } from './debug-log.js'
 import { createEditor } from './editor.js'
 import { FileModel } from './file-model.js'
 import { createFileTree } from './file-tree.js'
+import { LinkIndex } from './link-index.js'
 import { createResolver } from './links.js'
 import { render } from './render.js'
 
@@ -14,6 +15,7 @@ document.getElementById('version').textContent = `v${version}`
 // shortcut: active vault is a scalar in localStorage until VaultManager lands; no creation UI yet.
 const vaultId = localStorage.getItem('activeVaultId') || 'default'
 const model = new FileModel(vaultId)
+const index = new LinkIndex({ listNotes: () => model.listNotes(), readNote: (path) => model.readNote(path) })
 
 const emptyEl = document.getElementById('editor-empty')
 const hostEl = document.getElementById('editor')
@@ -23,6 +25,9 @@ const saveEl = document.getElementById('save-state')
 const renameButton = document.getElementById('rename-note')
 const deleteButton = document.getElementById('delete-note')
 const modeButton = document.getElementById('toggle-preview')
+const linksPanel = document.getElementById('links-panel')
+const backlinksEl = document.getElementById('backlinks')
+const outgoingEl = document.getElementById('outgoing')
 
 let current = null
 let mode = 'source'
@@ -55,9 +60,107 @@ const tree = createFileTree({
   onNewNoteIn: (folder) => createNote(folder),
 })
 
-document.addEventListener('note-saved', (event) => {
+document.addEventListener('note-saved', async (event) => {
   if (event.detail.path === current) setSaveState('Saved')
+  await index.update(event.detail.path, await model.readNote(event.detail.path))
+  updateLinksPanel()
 })
+
+function linkItem(path, context) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'link-item'
+  button.textContent = titleOf(path)
+  button.addEventListener('click', () => open(path))
+  if (!context) return button
+  const detail = document.createElement('span')
+  detail.className = 'link-context'
+  detail.textContent = context
+  button.append(detail)
+  return button
+}
+
+function updateLinksPanel() {
+  if (!current) {
+    linksPanel.hidden = true
+    return
+  }
+  linksPanel.hidden = false
+
+  const backlinks = index.getBacklinks(current)
+  backlinksEl.replaceChildren(
+    ...(backlinks.length
+      ? backlinks.flatMap(({ path, contexts }) => contexts.map((context) => linkItem(path, context)))
+      : [emptyNote('No backlinks')]),
+  )
+
+  const outgoing = index.getOutgoing(current)
+  outgoingEl.replaceChildren(
+    ...(outgoing.length
+      ? outgoing.map((link) => {
+          if (!link.path) {
+            const item = document.createElement('button')
+            item.type = 'button'
+            item.className = 'link-item link-unresolved'
+            item.textContent = link.target
+            item.addEventListener('click', () => createFromTarget(link.target))
+            return item
+          }
+          if (link.ambiguous) {
+            const item = document.createElement('button')
+            item.type = 'button'
+            item.className = 'link-item link-ambiguous'
+            item.textContent = link.target
+            item.title = 'Ambiguous link'
+            item.addEventListener('click', (event) => showDisambiguation(event, link.target))
+            return item
+          }
+          return linkItem(link.path)
+        })
+      : [emptyNote('No outgoing links')]),
+  )
+}
+
+function emptyNote(text) {
+  const span = document.createElement('span')
+  span.className = 'link-empty'
+  span.textContent = text
+  return span
+}
+
+// §10.2: never guess between two equally close notes; let the user pick.
+function showDisambiguation(event, target) {
+  document.querySelector('.disambiguation')?.remove()
+  const { candidates } = index.resolveLinkInfo(target, current)
+  if (candidates.length === 0) return
+
+  const menu = document.createElement('div')
+  menu.className = 'disambiguation'
+  menu.setAttribute('role', 'menu')
+  for (const path of candidates) {
+    const option = document.createElement('button')
+    option.type = 'button'
+    option.setAttribute('role', 'menuitem')
+    option.textContent = path
+    option.addEventListener('click', () => {
+      menu.remove()
+      open(path)
+    })
+    menu.append(option)
+  }
+
+  menu.style.left = `${Math.min(event.clientX, window.innerWidth - 280)}px`
+  menu.style.top = `${Math.min(event.clientY + 4, window.innerHeight - 160)}px`
+  document.body.append(menu)
+
+  const close = (closeEvent) => {
+    if (menu.contains(closeEvent.target)) return
+    menu.remove()
+    document.removeEventListener('click', close)
+  }
+  // Defer so the click that opened the menu does not close it immediately.
+  setTimeout(() => document.addEventListener('click', close))
+}
 
 function showEmpty() {
   current = null
@@ -72,6 +175,7 @@ function showEmpty() {
   modeButton.disabled = true
   modeButton.textContent = 'Preview'
   modeButton.setAttribute('aria-pressed', 'false')
+  linksPanel.hidden = true
   discardRender()
   tree.setCurrent(null)
 }
@@ -87,10 +191,9 @@ async function renderPreview() {
   if (!current) return
   const token = ++renderToken
   const paths = (await model.listNotes()).map((note) => note.path)
-  const resolveLink = createResolver(paths, current, 'note')
   const resolveEmbed = createResolver(paths, current, 'file')
   const result = await render(editor.getContent(), {
-    resolveLink,
+    resolveLink: (target) => index.resolveLink(target, current),
     resolveEmbed,
     readEmbed: (path) => (paths.includes(path) ? model.readBlob(path) : null),
   })
@@ -133,6 +236,7 @@ async function open(path) {
     deleteButton.disabled = false
     setSaveState('Saved')
     tree.setCurrent(path)
+    updateLinksPanel()
   } finally {
     editor.setEditable(true)
   }
@@ -154,6 +258,7 @@ async function createNote(folder = '') {
     for (let i = 2; taken.has(`${folder ? `${folder}/` : ''}${name}`); i++) name = `Untitled ${i}.md`
     const path = folder ? `${folder}/${name}` : name
     await model.createNote(path, '')
+    await index.rebuild()
     await tree.refresh()
     await open(path)
   } finally {
@@ -192,16 +297,36 @@ async function renameCurrent() {
   }
 
   await model.renameNote(current, target)
+  await index.rebuild()
   current = target
   pathEl.textContent = current
   await tree.refresh()
   tree.setCurrent(current)
+  updateLinksPanel()
+}
+
+async function createFromTarget(target) {
+  const clean = target.replace(/^\/+/, '').trim()
+  if (!clean || !window.confirm(`Create "${clean}"?`)) return
+  const path = /\.md$/i.test(clean) ? clean : `${clean}.md`
+  editor.setEditable(false)
+  try {
+    await model.createNote(path, '')
+    await index.rebuild()
+    await tree.refresh()
+    await open(path)
+  } catch {
+    window.alert('That path is not a valid note name.')
+  } finally {
+    editor.setEditable(true)
+  }
 }
 
 async function deleteCurrent() {
   if (!current) return
   if (!window.confirm(`Move "${titleOf(current)}" to trash?`)) return
   await model.deleteNote(current)
+  await index.rebuild()
   await tree.refresh()
   showEmpty()
 }
@@ -223,18 +348,12 @@ window.addEventListener('keydown', (event) => {
 previewEl.addEventListener('click', async (event) => {
   const link = event.target.closest('[data-wikilink]')
   if (link) {
-    if (link.dataset.path) return open(link.dataset.path)
-    const target = link.dataset.wikilink.replace(/^\/+/, '').trim()
-    if (!target || !window.confirm(`Create "${target}"?`)) return
-    const path = /\.md$/i.test(target) ? target : `${target}.md`
-    try {
-      await model.createNote(path, '')
-    } catch {
-      window.alert('That path is not a valid note name.')
-      return
+    if (link.dataset.ambiguous === 'true') {
+      event.stopPropagation()
+      return showDisambiguation(event, link.dataset.wikilink)
     }
-    await tree.refresh()
-    return open(path)
+    if (link.dataset.path) return open(link.dataset.path)
+    return createFromTarget(link.dataset.wikilink)
   }
 
   if (event.target.closest('.embed-missing')) {
@@ -248,7 +367,12 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', () => model.flush())
 
 showEmpty()
-tree.refresh()
+
+async function init() {
+  await index.rebuild()
+  await tree.refresh()
+}
+init()
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

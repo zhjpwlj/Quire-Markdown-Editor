@@ -19,6 +19,9 @@ const ALLOWED_ATTR = [
 const esc = (text) =>
   String(text).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 
+// A resolver may return a path string or { path, ambiguous } (LinkIndex).
+const linkInfo = (result) => (typeof result === 'string' ? { path: result || null, ambiguous: false } : (result ?? { path: null, ambiguous: false }))
+
 const extOf = (target) => (/\.([a-z0-9]+)$/i.exec(target)?.[1] ?? '').toLowerCase()
 // ![[Note]] and ![[Note.md]] are links (v4.1); a dotted name is an attachment.
 const embedIsNote = (target) => !extOf(target) || extOf(target) === 'md'
@@ -55,14 +58,15 @@ function wikiExtension({ resolveLink }) {
       }
     },
     renderer(token) {
-      const path = resolveLink(token.target)
-      const cls = path ? 'wikilink' : 'wikilink wikilink-unresolved'
+      const info = linkInfo(resolveLink(token.target))
+      const cls = info.path ? 'wikilink' : 'wikilink wikilink-unresolved'
       const attrs = [
         `class="${cls}"`,
         `data-wikilink="${esc(token.target)}"`,
+        info.ambiguous ? 'data-ambiguous="true"' : '',
         token.anchor ? `data-anchor="${esc(token.anchor)}"` : '',
-        path ? `data-path="${esc(path)}"` : '',
-        `title="${esc(path ?? 'Note not found')}"`,
+        info.path ? `data-path="${esc(info.path)}"` : '',
+        `title="${esc(info.path ?? 'Note not found')}"`,
       ].filter(Boolean)
       return `<a ${attrs.join(' ')}>${esc(token.display)}</a>`
     },
@@ -93,11 +97,14 @@ function embedExtension({ resolveLink, resolveEmbed, urls }) {
 
       // v4.1: ![[Note]] is a link, not a transclusion.
       if (embedIsNote(token.target)) {
-        const path = resolveLink(token.target.replace(/\.md$/i, ''))
-        const attrs = `class="wikilink" data-wikilink="${esc(token.target.replace(/\.md$/i, ''))}"${
-          path ? ` data-path="${esc(path)}"` : ''
-        }`
-        return `<a ${attrs}>${esc(token.display)}</a>`
+        const info = linkInfo(resolveLink(token.target.replace(/\.md$/i, '')))
+        const attrs = [
+          'class="wikilink"',
+          `data-wikilink="${esc(token.target.replace(/\.md$/i, ''))}"`,
+          info.ambiguous ? 'data-ambiguous="true"' : '',
+          info.path ? `data-path="${esc(info.path)}"` : '',
+        ].filter(Boolean)
+        return `<a ${attrs.join(' ')}>${esc(token.display)}</a>`
       }
       if (!path || !url) return broken
 
@@ -165,13 +172,14 @@ export async function render(markdown, { resolveLink = () => null, resolveEmbed 
     if (token.type === 'heading') {
       headings.push({ depth: token.depth, text: token.text })
     } else if (token.type === 'wikilink') {
-      links.push({ target: token.target, display: token.display, path: resolveLink(token.target), anchor: token.anchor })
+      const info = linkInfo(resolveLink(token.target))
+      links.push({ target: token.target, display: token.display, path: info.path, ambiguous: info.ambiguous, anchor: token.anchor })
     } else if (token.type === 'embed') {
       const path = resolveEmbed(token.target)
       const note = embedIsNote(token.target)
       embeds.push({
         target: token.target,
-        path: note ? resolveLink(token.target.replace(/\.md$/i, '')) : path,
+        path: note ? linkInfo(resolveLink(token.target.replace(/\.md$/i, ''))).path : path,
         missing: note ? false : !path || !urls.has(path),
       })
     }

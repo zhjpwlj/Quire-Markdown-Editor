@@ -20,8 +20,8 @@ test('renders wiki-links, tags and headings, and strips frontmatter', async ({ p
   expect(result.html).toContain('wikilink-unresolved')
   expect(result.html).toContain('data-tag="work"')
   expect(result.links).toEqual([
-    { target: 'Other', display: 'Other', path: 'Other.md', anchor: '' },
-    { target: 'Missing', display: 'Missing', path: null, anchor: '' },
+    { target: 'Other', display: 'Other', path: 'Other.md', ambiguous: false, anchor: '' },
+    { target: 'Missing', display: 'Missing', path: null, ambiguous: false, anchor: '' },
   ])
   expect(result.headings).toEqual([{ depth: 1, text: 'Hello' }])
 })
@@ -69,6 +69,18 @@ test('embeds images as blob URLs and never trusts missing files', async ({ page 
     { target: 'gone.png', path: null, missing: true },
     { target: 'Note', path: 'Note.md', missing: false },
   ])
+})
+
+test('marks an ambiguous link without guessing in the markup', async ({ page }) => {
+  const out = await page.evaluate(async () => {
+    const result = await window.render('[[Note]]', {
+      resolveLink: () => ({ path: 'a/Note.md', ambiguous: true }),
+    })
+    return { html: result.html, links: result.links }
+  })
+  expect(out.html).toContain('data-ambiguous="true"')
+  expect(out.html).toContain('data-path="a/Note.md"')
+  expect(out.links[0].ambiguous).toBe(true)
 })
 
 test('resolver prefers exact paths, then same folder, then shallowest', async ({ page }) => {

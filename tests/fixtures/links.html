@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>LinkIndex fixture</title>
+  </head>
+  <body>
+    <!-- Dev-server only: exposes the link index for browser tests. Never built. -->
+    <script type="module">
+      import { LinkIndex } from '/src/link-index.js'
+      window.LinkIndex = LinkIndex
+    </script>
+  </body>
+</html>
