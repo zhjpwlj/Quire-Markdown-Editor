@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OPFS fixture</title>
+  </head>
+  <body>
+    <!-- Dev-server only: exposes the storage module for browser tests. Never built. -->
+    <script type="module">
+      import * as opfs from '/src/storage/opfs.js'
+      window.opfs = opfs
+    </script>
+  </body>
+</html>
