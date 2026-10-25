@@ -1,10 +1,12 @@
 import './app-shell.css'
+import { version } from '../package.json'
 import { installDebugLog } from './debug-log.js'
 import { createEditor } from './editor.js'
 import { FileModel } from './file-model.js'
 
 installDebugLog()
 document.getElementById('app').dataset.ready = 'true'
+document.getElementById('version').textContent = `v${version}`
 
 // shortcut: active vault is a scalar in localStorage until VaultManager lands; no creation UI yet.
 const vaultId = localStorage.getItem('activeVaultId') || 'default'

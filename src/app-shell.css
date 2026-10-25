@@ -218,6 +218,12 @@ body {
   margin-left: auto;
 }
 
+.version {
+  margin-left: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 899px) {
   .workspace {
     grid-template-columns: 1fr;
