@@ -36,6 +36,7 @@ test('creates a folder and a note inside it', async ({ page }) => {
 
 test('rename rewrites wikilinks in other notes', async ({ page }) => {
   await page.getByRole('button', { name: 'New note', exact: true }).click()
+  await expect(page.locator('#status-path')).toHaveText('Untitled.md')
   await page.locator('.cm-content').click()
   await page.keyboard.type('see [[Untitled 2]]')
   await expect(page.locator('#save-state')).toHaveText('Saved')
@@ -56,6 +57,7 @@ test('rename rewrites wikilinks in other notes', async ({ page }) => {
 
 test('delete moves the note to trash and it stays gone after reload', async ({ page }) => {
   await page.getByRole('button', { name: 'New note', exact: true }).click()
+  await expect(page.locator('#status-path')).toHaveText('Untitled.md')
   await page.locator('.cm-content').click()
   await page.keyboard.type('# doomed')
   await expect(page.locator('#save-state')).toHaveText('Saved')

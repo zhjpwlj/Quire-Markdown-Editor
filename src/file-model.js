@@ -31,6 +31,10 @@ export class FileModel {
     return content
   }
 
+  readBlob(path) {
+    return opfs.readBlob(this.vaultId, path)
+  }
+
   writeNote(path, content) {
     const entry = this.cache.get(path) ?? { content: '', dirty: false }
     entry.content = content

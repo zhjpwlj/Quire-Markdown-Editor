@@ -46,6 +46,14 @@ export async function readNote(vaultId, path) {
   return (await file.getFile()).text()
 }
 
+// Attachments are read as blobs; the render pipeline turns them into blob: URLs.
+export async function readBlob(vaultId, path) {
+  const parts = segments(path)
+  const dir = await vaultDir(vaultId, parts.slice(0, -1).join('/'))
+  const file = await dir.getFileHandle(parts.at(-1))
+  return file.getFile()
+}
+
 export async function listNotes(vaultId) {
   const root = await vaultDir(vaultId)
   const notes = []

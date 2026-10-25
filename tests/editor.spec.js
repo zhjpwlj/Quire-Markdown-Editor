@@ -26,6 +26,7 @@ test('switching notes flushes the pending save', async ({ page }) => {
   await page.locator('.cm-content').click()
   await page.keyboard.type('alpha')
   await page.getByRole('button', { name: 'New note', exact: true }).click()
+  await expect(page.locator('#status-path')).toHaveText('Untitled 2.md')
   await page.locator('.cm-content').click()
   await page.keyboard.type('beta')
 

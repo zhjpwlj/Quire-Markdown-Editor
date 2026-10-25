@@ -1,7 +1,7 @@
 // EditorController, source mode (§6.3). CodeMirror 6 with markdown highlighting.
 // RichEditor (Milkdown) lands with Simple Mode; this is the only implementation for now.
 import { basicSetup, EditorView } from 'codemirror'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Compartment } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
@@ -49,6 +49,7 @@ const highlight = HighlightStyle.define([
 
 export function createEditor(parent, { onInput, onSave }) {
   let applying = false
+  const editable = new Compartment()
 
   const extensions = [
     basicSetup,
@@ -56,6 +57,7 @@ export function createEditor(parent, { onInput, onSave }) {
     syntaxHighlighting(highlight),
     theme,
     EditorView.lineWrapping,
+    editable.of(EditorView.editable.of(true)),
     EditorView.updateListener.of((update) => {
       if (!applying && update.docChanged) onInput(update.state.doc.toString())
     }),
@@ -73,6 +75,8 @@ export function createEditor(parent, { onInput, onSave }) {
       view.dispatch({ selection: { anchor: 0 }, scrollIntoView: true })
     },
     getContent: () => view.state.doc.toString(),
+    // Note switches lock the editor so keystrokes cannot land in the outgoing note.
+    setEditable: (value) => view.dispatch({ effects: editable.reconfigure(EditorView.editable.of(value)) }),
     focus: () => view.focus(),
     destroy: () => view.destroy(),
   }

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Render fixture</title>
+  </head>
+  <body>
+    <!-- Dev-server only: exposes the render pipeline for browser tests. Never built. -->
+    <script type="module">
+      import { render } from '/src/render.js'
+      import { createResolver } from '/src/links.js'
+      window.render = render
+      window.createResolver = createResolver
+    </script>
+  </body>
+</html>
