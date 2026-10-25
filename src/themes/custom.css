@@ -1,0 +1,15 @@
+/* Custom — Quire's signature look. Default theme. */
+:root {
+  --bg-primary: #0e0e11;
+  --bg-secondary: #16161b;
+  --bg-elevated: #1d1d24;
+  --bg-hover: #23232b;
+  --text-primary: #e8e8ee;
+  --text-secondary: #a8a8b6;
+  --text-muted: #6f6f7e;
+  --accent-primary: #b9a7ff;
+  --accent-hover: #cbbdff;
+  --accent-text: #14121c;
+  --border-color: #2a2a34;
+  --shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}

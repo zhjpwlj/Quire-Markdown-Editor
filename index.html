@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content="__CSP__" />
+    <title>Quire</title>
+    <meta name="description" content="Local-first markdown notes that sync to your cloud." />
+    <meta name="theme-color" content="#0e0e11" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Quire" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- One link per theme; the active theme's link switches to media="all" (§11.3). -->
+    <link rel="stylesheet" href="/src/themes/custom.css" media="all" data-theme="custom" />
+    <link rel="stylesheet" href="/src/themes/obsidian-dark.css" media="not all" data-theme="obsidian-dark" />
+    <link rel="stylesheet" href="/src/themes/obsidian-light.css" media="not all" data-theme="obsidian-light" />
+    <link rel="stylesheet" href="/src/themes/solarized-dark.css" media="not all" data-theme="solarized-dark" />
+    <link rel="stylesheet" href="/src/themes/nord.css" media="not all" data-theme="nord" />
+  </head>
+  <body>
+    <div class="app" id="app" data-mode="simple">
+      <header class="topbar">
+        <span class="app-name">Quire</span>
+        <span class="vault-name" id="vault-name">No vault open</span>
+        <span class="sync-status" id="sync-status" role="status" aria-live="polite">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span class="sync-label">This device only</span>
+        </span>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar" aria-label="Notes">
+          <div class="sidebar-empty">Notes live here.</div>
+        </aside>
+        <main class="editor-pane" aria-label="Editor">
+          <div class="editor-empty">
+            <h1>Quire</h1>
+            <p>Local-first markdown notes that sync to your cloud.</p>
+          </div>
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <span>Shell ready</span>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "quire",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Quire — local-first markdown notes that sync to your cloud.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-build.mjs",
+    "e2e": "playwright test",
+    "test": "npm run build && npm run check && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "vite": "^7.1.0"
+  }
+}
