@@ -15,6 +15,14 @@ export class FileModel {
     return opfs.listNotes(this.vaultId)
   }
 
+  listFolders() {
+    return opfs.listFolders(this.vaultId)
+  }
+
+  createFolder(path) {
+    return opfs.createFolder(this.vaultId, path)
+  }
+
   async readNote(path) {
     const cached = this.cache.get(path)
     if (cached) return cached.content
@@ -67,5 +75,46 @@ export class FileModel {
 
   getDirtyNotes() {
     return [...this.cache.keys()].filter((path) => this.cache.get(path).dirty)
+  }
+
+  async renameNote(from, to) {
+    await this.flushNote(from)
+    const content = await this.readNote(from)
+
+    await opfs.writeNote(this.vaultId, to, content)
+    await opfs.removeNote(this.vaultId, from)
+    this.cache.delete(from)
+    this.cache.set(to, { content, dirty: false })
+
+    await this.rewriteLinks(from, to)
+    document.dispatchEvent(new CustomEvent('note-renamed', { detail: { from, to } }))
+  }
+
+  // shortcut: full scan of every note per rename. LinkIndex (M6) replaces this with
+  // getIncoming(path). Fine up to the 2,000-note soft cap.
+  async rewriteLinks(from, to) {
+    const titleOf = (path) => path.split('/').pop().replace(/\.md$/, '')
+    const oldTitle = titleOf(from)
+    const newTitle = titleOf(to)
+    const oldRef = from.replace(/\.md$/, '')
+    const newRef = to.replace(/\.md$/, '')
+    const targets = new Set([oldTitle.toLowerCase(), oldRef.toLowerCase()])
+    const wikilink = /(!?\[\[)([^\]|#]+)((?:[|#])[^\]]*)?\]\]/g
+
+    const pending = []
+    for (const note of await this.listNotes()) {
+      if (note.path === to) continue
+      const content = await this.readNote(note.path)
+      const updated = content.replace(wikilink, (match, open, target, rest = '') => {
+        if (!targets.has(target.trim().toLowerCase())) return match
+        return `${open}${target.includes('/') ? newRef : newTitle}${rest}]]`
+      })
+      if (updated !== content) pending.push({ path: note.path, content: updated })
+    }
+    if (pending.length === 0) return
+    if (pending.length > 50 && !confirm(`Update links in ${pending.length} notes?`)) return
+
+    for (const change of pending) this.writeNote(change.path, change.content)
+    await this.flush()
   }
 }

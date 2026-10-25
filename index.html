@@ -39,7 +39,10 @@
         <aside class="sidebar" aria-label="Notes">
           <div class="sidebar-head">
             <span class="sidebar-title">Notes</span>
-            <button type="button" id="new-note" class="new-note">New note</button>
+            <span class="sidebar-actions">
+              <button type="button" id="new-note" class="new-note">New note</button>
+              <button type="button" id="new-folder" class="new-note">New folder</button>
+            </span>
           </div>
           <nav class="note-list" id="note-list" aria-label="Notes"></nav>
         </aside>
@@ -54,6 +57,10 @@
 
       <footer class="statusbar">
         <span id="status-path">No note open</span>
+        <span class="status-actions">
+          <button type="button" id="rename-note" disabled>Rename</button>
+          <button type="button" id="delete-note" disabled>Delete</button>
+        </span>
         <span class="save-state" id="save-state"></span>
         <span class="version" id="version"></span>
       </footer>

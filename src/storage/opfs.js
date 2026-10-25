@@ -66,6 +66,36 @@ export async function listNotes(vaultId) {
   return notes.sort((a, b) => a.path.localeCompare(b.path))
 }
 
+export async function createFolder(vaultId, path) {
+  await vaultDir(vaultId, segments(path).join('/'), true)
+}
+
+export async function listFolders(vaultId) {
+  const root = await vaultDir(vaultId)
+  const folders = []
+
+  async function walk(dir, prefix) {
+    for await (const [name, handle] of dir.entries()) {
+      if (handle.kind !== 'directory') continue
+      // .quire/ and .trash/ are device state, not vault structure.
+      if (prefix === '' && (name === CONFIG || name === TRASH)) continue
+      const path = `${prefix}${name}`
+      folders.push(path)
+      await walk(handle, `${path}/`)
+    }
+  }
+
+  await walk(root, '')
+  return folders.sort()
+}
+
+// Rename deletes the old file outright; the caller has already written the new one.
+export async function removeNote(vaultId, path) {
+  const parts = segments(path)
+  const dir = await vaultDir(vaultId, parts.slice(0, -1).join('/'))
+  await dir.removeEntry(parts.at(-1))
+}
+
 // Deletes are opt-in and reversible: the file is copied into .trash first, then removed.
 export async function trashNote(vaultId, path) {
   const parts = segments(path)

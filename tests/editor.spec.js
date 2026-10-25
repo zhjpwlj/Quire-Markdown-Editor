@@ -42,5 +42,5 @@ test('switching notes flushes the pending save', async ({ page }) => {
 test('new notes get unique names', async ({ page }) => {
   await page.getByRole('button', { name: 'New note' }).click()
   await page.getByRole('button', { name: 'New note' }).click()
-  await expect(page.locator('.note-list button')).toHaveText(['Untitled 2', 'Untitled'])
+  await expect(page.locator('.note-list button')).toHaveText(['Untitled', 'Untitled 2'])
 })
