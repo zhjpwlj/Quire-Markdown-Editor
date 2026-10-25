@@ -12,7 +12,9 @@ test('shell boots offline after one online visit', async ({ page, context }) => 
   await page.waitForFunction(() => navigator.serviceWorker?.controller !== null)
 
   await context.setOffline(true)
-  await page.reload()
+  const navigation = await page.reload()
+  // Must be served by the worker, not Chromium's HTTP cache.
+  expect(navigation?.fromServiceWorker(), 'offline navigation not served by the service worker').toBe(true)
 
   await expect(page.getByRole('heading', { name: 'Quire' })).toBeVisible()
   await expect(page.locator('.editor-empty p')).toHaveText(/Local-first markdown notes/)

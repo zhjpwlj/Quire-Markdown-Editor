@@ -3,13 +3,26 @@
 const PRECACHE = __PRECACHE__
 const CACHE = 'quire-shell-v1'
 
+// CDNs (Cloudflare Pages, most static hosts) compress text with brotli/gzip. cache.addAll
+// stores the decoded body but keeps the original Content-Encoding header, so replaying the
+// entry fails as net::ERR_FAILED — for navigations the whole page dies. Rewrite each entry
+// with encoding headers removed. Verified against the live Cloudflare deployment.
+async function precache() {
+  const cache = await caches.open(CACHE)
+  await cache.addAll(PRECACHE)
+  for (const request of await cache.keys()) {
+    const response = await cache.match(request)
+    const headers = new Headers(response.headers)
+    for (const name of ['content-encoding', 'content-length', 'transfer-encoding', 'vary']) headers.delete(name)
+    await cache.put(
+      request,
+      new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers }),
+    )
+  }
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
-  )
+  event.waitUntil(precache().then(() => self.skipWaiting()))
 })
 
 self.addEventListener('activate', (event) => {
@@ -39,8 +52,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Hashed assets are immutable, so cache-first is safe.
-  // ignoreVary: hosts and CDNs send Vary: Origin on JS/CSS; without this, crossorigin-tagged
-  // assets miss the precache offline (verified in Chromium).
+  // ignoreVary: hosts send Vary: Origin on JS/CSS, which otherwise misses the precache offline.
   // shortcut: old hashed assets linger under one cache name until the version bumps, upgrade when deploys get frequent.
   event.respondWith(caches.match(request, { ignoreVary: true }).then((hit) => hit || fetch(request)))
 })

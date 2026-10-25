@@ -39,7 +39,9 @@ Until then, the `/oauth/callback` page is a stub.
 
 - Plain JavaScript, Vite, no UI framework. Revisit TypeScript before the sync/provider work if type drift starts to hurt.
 - Theme palette vars live per theme; editor/syntax vars are derived once in `app-shell.css` (§11.2) so no theme can miss one.
-- Precached responses are matched with `ignoreVary: true` — CDNs send `Vary: Origin` on JS/CSS and would otherwise miss offline.
+- Precached responses are matched with `ignoreVary: true`, and `Content-Encoding` is stripped
+  at install: Cloudflare sends brotli on HTML, `cache.addAll` stores the decoded body with the
+  header still attached, and replaying that as a document fails with `net::ERR_FAILED`.
 - Swapping JSON handoff keys are prefixed `quire-` (Milestone 14).
 
 ## Verified

@@ -85,6 +85,8 @@ for (const [path, size] of [
 const sw = read('sw.js')
 assert.ok(!sw.includes('__PRECACHE__'), 'precache manifest not injected')
 const precache = JSON.parse(sw.match(/const PRECACHE = (\[.*?\])\n/s)[1])
+// CDN-compressed responses keep content-encoding after cache.addAll and break replay.
+assert.match(sw, /content-encoding/, 'service worker must strip content-encoding from precached responses')
 assert.ok(precache.includes('/index.html'), 'shell index.html not precached')
 assert.ok(precache.includes('/manifest.webmanifest'), 'manifest not precached')
 assert.ok(precache.includes('/oauth/callback/index.html'), 'callback page not precached')
