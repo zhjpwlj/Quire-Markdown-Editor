@@ -37,18 +37,24 @@
 
       <div class="workspace">
         <aside class="sidebar" aria-label="Notes">
-          <div class="sidebar-empty">Notes live here.</div>
+          <div class="sidebar-head">
+            <span class="sidebar-title">Notes</span>
+            <button type="button" id="new-note" class="new-note">New note</button>
+          </div>
+          <nav class="note-list" id="note-list" aria-label="Notes"></nav>
         </aside>
         <main class="editor-pane" aria-label="Editor">
-          <div class="editor-empty">
+          <div class="editor-empty" id="editor-empty">
             <h1>Quire</h1>
             <p>Local-first markdown notes that sync to your cloud.</p>
           </div>
+          <div class="editor-host" id="editor" hidden></div>
         </main>
       </div>
 
       <footer class="statusbar">
-        <span>Shell ready</span>
+        <span id="status-path">No note open</span>
+        <span class="save-state" id="save-state"></span>
       </footer>
     </div>
 
