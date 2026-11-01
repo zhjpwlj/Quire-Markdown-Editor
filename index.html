@@ -33,48 +33,22 @@
           <span class="sync-dot" aria-hidden="true"></span>
           <span class="sync-label">This device only</span>
         </span>
-        <button type="button" class="mode-toggle" id="toggle-preview" aria-pressed="false" title="Alt+P">Preview</button>
       </header>
 
       <div class="workspace">
         <aside class="sidebar" aria-label="Notes">
-          <div class="sidebar-head">
-            <span class="sidebar-title">Notes</span>
-            <span class="sidebar-actions">
-              <button type="button" id="new-note" class="new-note">New note</button>
-              <button type="button" id="new-folder" class="new-note">New folder</button>
-            </span>
-          </div>
-          <nav class="note-list" id="note-list" aria-label="Notes"></nav>
+          <div class="sidebar-empty">Notes live here.</div>
         </aside>
         <main class="editor-pane" aria-label="Editor">
-          <div class="editor-empty" id="editor-empty">
+          <div class="editor-empty">
             <h1>Quire</h1>
             <p>Local-first markdown notes that sync to your cloud.</p>
           </div>
-          <div class="editor-host" id="editor" hidden></div>
-          <div class="preview-host markdown" id="preview" hidden></div>
         </main>
-        <aside class="links-panel" id="links-panel" aria-label="Links" hidden>
-          <section>
-            <h2>Backlinks</h2>
-            <div class="link-list" id="backlinks"></div>
-          </section>
-          <section>
-            <h2>Outgoing</h2>
-            <div class="link-list" id="outgoing"></div>
-          </section>
-        </aside>
       </div>
 
       <footer class="statusbar">
-        <span id="status-path">No note open</span>
-        <span class="status-actions">
-          <button type="button" id="rename-note" disabled>Rename</button>
-          <button type="button" id="delete-note" disabled>Delete</button>
-        </span>
-        <span class="save-state" id="save-state"></span>
-        <span class="version" id="version"></span>
+        <span>Shell ready</span>
       </footer>
     </div>
 

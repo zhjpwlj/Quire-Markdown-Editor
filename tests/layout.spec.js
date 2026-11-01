@@ -42,3 +42,28 @@ test('long-press on the title opens the debug log, short press does not', async 
   await page.locator('.debug-log-close').click()
   await expect(page.locator('.debug-log')).toHaveCount(0)
 })
+
+test('debug log scrolls its own body', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 })
+  await page.goto('/')
+  await page.evaluate(() => {
+    for (let i = 0; i < 120; i++) console.log('entry', i)
+  })
+
+  const box = await page.locator('.app-name').boundingBox()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.waitForTimeout(1200)
+  await page.mouse.up()
+
+  const metrics = await page.evaluate(() => {
+    const body = document.querySelector('.debug-log-body')
+    const panel = document.querySelector('.debug-log')
+    body.scrollTop = body.scrollHeight
+    return { scrollHeight: body.scrollHeight, clientHeight: body.clientHeight, panelHeight: panel.getBoundingClientRect().height, scrolled: body.scrollTop }
+  })
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight)
+  expect(metrics.panelHeight).toBeLessThanOrEqual(361)
+  expect(metrics.scrolled).toBeGreaterThan(0)
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
