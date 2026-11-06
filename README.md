@@ -2,7 +2,7 @@
 
 Local-first markdown notes that sync to your cloud. Installable PWA, plain markdown in OPFS, opt-in sync and encryption.
 
-Status: **Milestone 1 — app shell only.** No storage, editor, sync, or auth yet.
+Status: **Milestone 2 — OPFS storage.** Vaults create, switch, rename and delete; notes live in OPFS; deletes go to `.trash/`. No editor, sidebar, sync, or auth yet.
 
 ## Run
 
@@ -11,6 +11,7 @@ npm install
 npm run dev          # dev server with CSP + HMR
 npm run build        # production build
 npm test             # build, build assertions, offline/MV3 e2e (Chromium)
+node scripts/seed-vault.mjs   # seed a "Seed" vault (needs `vite preview` on :4173)
 ```
 
 `npm test` needs one browser download once: `npx playwright install chromium`.
@@ -35,6 +36,16 @@ GitHub's token endpoint requires `client_secret` for the web flow and sends no C
 
 Until then, the `/oauth/callback` page is a stub.
 
+## Storage model (M2)
+
+- Files live at OPFS `quire/vaults/<uuid>/<path>`; each vault has `.quire/vault.json` and `.trash/`.
+- IndexedDB database `quire` holds vault records plus the empty stores later milestones fill.
+- `localStorage` holds only `activeVaultId` and `vaultOrder`; order is stored because IndexedDB returns rows in key (UUID) order, not creation order.
+- Deleting a note moves it to `.trash/<UTC timestamp>/<original path>`; `emptyTrash()` is the only hard delete.
+- Deleting a vault moves its whole folder to `quire/vaults/.trash/<id>-<timestamp>` (§6.1).
+- On startup, vault records whose `.quire/vault.json` is missing are treated as evicted and dropped, so the app prompts for a first vault instead of crashing.
+- `window.__quire` is an internal test/seed handle, marked `shortcut:` in `src/main.js`; remove before 1.0.
+
 ## Decisions taken in M1
 
 - Plain JavaScript, Vite, no UI framework. Revisit TypeScript before the sync/provider work if type drift starts to hurt.
@@ -47,7 +58,7 @@ Until then, the `/oauth/callback` page is a stub.
 ## Verified
 
 - `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~59 KB).
-- `npm test`: shell boots and stays styled with the network offline after one visit; CSP blocks a non-allowlisted origin; manifest is served and installable-shaped.
+- `npm test`: 11 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, and the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys).
 
 ## Not verified (needs hardware)
 
