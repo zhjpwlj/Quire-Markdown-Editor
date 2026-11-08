@@ -1,5 +1,5 @@
-import { listFiles, readFile, statFile, vaultPath, writeFile } from '../storage/opfs.js'
-import { moveToTrash } from '../storage/trash.js'
+import { createFolder, deleteFile, listFiles, moveDirectory, readFile, statFile, vaultPath, writeFile } from '../storage/opfs.js'
+import { moveToTrash, trashStamp } from '../storage/trash.js'
 import { createAutosave, installFlushHooks } from '../editor/autosave.js'
 
 const byteLength = (text) => new TextEncoder().encode(text).length
@@ -112,6 +112,89 @@ export class FileModel {
     this.autosave.cancel(path)
     await moveToTrash(this.vaultId, path)
     this.notes.delete(path)
+  }
+
+  // Rename is not a delete (§6.2): write the new file with identical content, then remove the old
+  // one outright. A failed delete leaves both files, which the user can clean up.
+  async moveNote(from, to) {
+    if (from === to) return this.notes.get(to) ?? null
+    if ((await statFile(vaultPath(this.vaultId, to))) !== null) {
+      throw new Error(`note already exists: ${to}`)
+    }
+    await this.flush()
+    const content = await readFile(vaultPath(this.vaultId, from))
+    if (content === null) throw new Error(`note not found: ${from}`)
+    await writeFile(vaultPath(this.vaultId, to), content)
+    await deleteFile(vaultPath(this.vaultId, from))
+    this.notes.delete(from)
+    const record = {
+      ...newRecord(to),
+      content,
+      mtime: Date.now(),
+      size: byteLength(content),
+      dirty: false,
+    }
+    this.notes.set(to, record)
+    return record
+  }
+
+  async createFolder(path) {
+    if ((await statFile(vaultPath(this.vaultId, path))) !== null) {
+      throw new Error(`item already exists: ${path}`)
+    }
+    await createFolder(vaultPath(this.vaultId, path))
+  }
+
+  async moveFolder(path, to) {
+    if (path === to) return
+    if ((await statFile(vaultPath(this.vaultId, to))) !== null) {
+      throw new Error(`item already exists: ${to}`)
+    }
+    await this.flush()
+    await moveDirectory(vaultPath(this.vaultId, path), vaultPath(this.vaultId, to))
+    for (const [notePath, record] of [...this.notes]) {
+      if (notePath !== path && !notePath.startsWith(`${path}/`)) continue
+      this.notes.delete(notePath)
+      const moved = notePath.slice(path.length).replace(/^\//, '')
+      this.notes.set([to, moved].filter(Boolean).join('/'), record)
+    }
+  }
+
+  // §6.1 again: deleting a folder moves it to trash, never a hard delete.
+  async deleteFolder(path) {
+    this.notes.delete(path)
+    await moveDirectory(vaultPath(this.vaultId, path), vaultPath(this.vaultId, `.trash/${trashStamp()}/${path}`))
+    for (const notePath of [...this.notes.keys()]) {
+      if (notePath.startsWith(`${path}/`)) this.notes.delete(notePath)
+    }
+  }
+
+  async duplicateNote(path) {
+    await this.flush()
+    const source = await readFile(vaultPath(this.vaultId, path))
+    if (source === null) throw new Error(`note not found: ${path}`)
+    const dir = path.includes('/') ? `${path.slice(0, path.lastIndexOf('/'))}/` : ''
+    const title = path.slice(dir.length).replace(/\.md$/i, '')
+    let copy = `${dir}${title} copy.md`
+    for (let n = 2; (await statFile(vaultPath(this.vaultId, copy))) !== null; n += 1) {
+      copy = `${dir}${title} copy ${n}.md`
+    }
+    await writeFile(vaultPath(this.vaultId, copy), source)
+    return this.readNote(copy)
+  }
+
+  async listTree() {
+    const base = vaultPath(this.vaultId)
+    const entries = await listFiles(base, { recursive: true })
+    return entries
+      .map((entry) => ({
+        path: entry.path.slice(base.length + 1),
+        name: entry.name,
+        kind: entry.kind === 'directory' ? 'folder' : 'file',
+      }))
+      .filter((entry) => !['.quire', '.trash'].includes(entry.path))
+      .filter((entry) => !entry.path.startsWith('.quire/') && !entry.path.startsWith('.trash/'))
+      .filter((entry) => entry.kind === 'folder' || /\.md$/i.test(entry.path))
   }
 
   async flush() {

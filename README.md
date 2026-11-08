@@ -2,7 +2,7 @@
 
 Local-first markdown notes that sync to your cloud. Installable PWA, plain markdown in OPFS, opt-in sync and encryption.
 
-Status: **Milestone 3 — file model + source editor.** Vaults and notes live in OPFS; CodeMirror edits markdown with a 500ms debounced autosave. No sidebar, preview, search, sync, or auth yet.
+Status: **Milestone 4 — sidebar and navigation.** Folder tree, pointer drag-and-drop, rename, duplicate and delete (to trash) work against OPFS. No preview, search, sync, or auth yet.
 
 ## Run
 
@@ -54,6 +54,15 @@ Until then, the `/oauth/callback` page is a stub.
 - Frontmatter is preserved byte-for-byte. Nothing parses or reformats it until M8.
 - The editor is CodeMirror 6 with `@codemirror/lang-markdown` and `theme-one-dark` as the placeholder surface; M10 replaces the colors with theme CSS vars.
 
+## Sidebar and file operations (M4)
+
+- Folders sort before files at every level; names use `localeCompare(..., { numeric: true, sensitivity: 'base' })`.
+- Drag-and-drop uses pointer events with a floating clone, not HTML5 DnD (unreliable on iOS). Dropping onto a file is a no-op; folder reordering is not supported in Simple Mode.
+- Rename follows §6.2: write the new file with byte-identical content, then remove the old one directly (rename is not a delete). Frontmatter and aliases pass through untouched.
+- `LinkIndex.getIncoming()` is an interface stub returning `[]`; M6 replaces it. When it reports more than 50 incoming links, the rename modal asks first and Cancel aborts before any write.
+- Deleting a note or folder moves it to `.trash/`; `.trash/` is never shown in the tree.
+- Filenames are validated, not sanitized: `/`, `\`, `:`, control characters, and trailing space or dot are rejected with a visible error.
+
 ## Decisions taken in M1
 
 - Plain JavaScript, Vite, no UI framework. Revisit TypeScript before the sync/provider work if type drift starts to hurt.
@@ -65,8 +74,8 @@ Until then, the `/oauth/callback` page is a stub.
 
 ## Verified
 
-- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~573 KB, CodeMirror included).
-- `npm test`: 17 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys), and the M3 editor list (debounced write, pagehide flush, frontmatter round-trip, mtime/size after restart, dirty flag, single editor instance, no CodeMirror warnings).
+- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~588 KB, CodeMirror included).
+- `npm test`: 24 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys), the M3 editor list (debounced write, pagehide flush, frontmatter round-trip, mtime/size after restart, dirty flag, single editor instance, no CodeMirror warnings), and the M4 sidebar list (drag into folder, rename, 60-link cancel, delete to trash, natural sort, empty folder, filename validation).
 
 ## Not verified (needs hardware)
 
