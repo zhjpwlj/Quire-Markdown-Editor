@@ -2,7 +2,7 @@
 
 Local-first markdown notes that sync to your cloud. Installable PWA, plain markdown in OPFS, opt-in sync and encryption.
 
-Status: **Milestone 2 — OPFS storage.** Vaults create, switch, rename and delete; notes live in OPFS; deletes go to `.trash/`. No editor, sidebar, sync, or auth yet.
+Status: **Milestone 3 — file model + source editor.** Vaults and notes live in OPFS; CodeMirror edits markdown with a 500ms debounced autosave. No sidebar, preview, search, sync, or auth yet.
 
 ## Run
 
@@ -46,6 +46,14 @@ Until then, the `/oauth/callback` page is a stub.
 - On startup, vault records whose `.quire/vault.json` is missing are treated as evicted and dropped, so the app prompts for a first vault instead of crashing.
 - `window.__quire` is an internal test/seed handle, marked `shortcut:` in `src/main.js`; remove before 1.0.
 
+## Editing model (M3)
+
+- `FileModel` owns note records (`path`, `title`, `content`, `mtime`, `size`, `dirty`) and the debounced writer. `readNote()` always reads OPFS; content is never trusted from a previous vault.
+- Autosave is trailing-debounce 500ms. `flush()` runs on note navigation, `visibilitychange → hidden`, and `pagehide`. `beforeunload` is deliberately unused (iOS Safari does not fire it reliably).
+- **Known ceiling:** the unload flush is asynchronous, so a tab killed in the same tick can lose the last keystroke. The window is bounded by the 500ms debounce; there is no synchronous OPFS write on the main thread.
+- Frontmatter is preserved byte-for-byte. Nothing parses or reformats it until M8.
+- The editor is CodeMirror 6 with `@codemirror/lang-markdown` and `theme-one-dark` as the placeholder surface; M10 replaces the colors with theme CSS vars.
+
 ## Decisions taken in M1
 
 - Plain JavaScript, Vite, no UI framework. Revisit TypeScript before the sync/provider work if type drift starts to hurt.
@@ -57,8 +65,8 @@ Until then, the `/oauth/callback` page is a stub.
 
 ## Verified
 
-- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~59 KB).
-- `npm test`: 11 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, and the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys).
+- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~573 KB, CodeMirror included).
+- `npm test`: 17 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys), and the M3 editor list (debounced write, pagehide flush, frontmatter round-trip, mtime/size after restart, dirty flag, single editor instance, no CodeMirror warnings).
 
 ## Not verified (needs hardware)
 

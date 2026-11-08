@@ -39,8 +39,17 @@ export async function writeFile(path, content) {
   await stream.close()
 }
 
-export async function listFiles(path = '', { recursive = false } = {}) {
-  const directory = await getDirectoryHandle(path)
+export async function statFile(path) {
+  try {
+    const file = await (await getFileHandle(path)).getFile()
+    return { size: file.size, lastModified: file.lastModified }
+  } catch (error) {
+    if (error.name === 'NotFoundError') return null
+    throw error
+  }
+}
+
+export async function listFiles(path = '', { recursive = false } = {}) {  const directory = await getDirectoryHandle(path)
   const entries = []
   for await (const [name, handle] of directory.entries()) {
     const childPath = [path, name].filter(Boolean).join('/')

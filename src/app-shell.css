@@ -122,16 +122,36 @@ body {
 }
 
 .editor-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: var(--editor-bg);
   color: var(--editor-text);
-  padding: 32px;
-  overflow: auto;
+  /* The CodeMirror scroller owns scrolling; the pane itself never scrolls. */
+  overflow: hidden;
 }
 
 .editor-empty {
   max-width: 56ch;
   margin: 8vh auto 0;
+  padding: 0 32px 32px;
   text-align: center;
+}
+
+.editor-host {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Placeholder one-dark surface; M10 replaces the colors with theme CSS vars. */
+.editor-host .cm-editor {
+  height: 100%;
+  font-family: var(--editor-font-family);
+  font-size: var(--editor-font-size);
+}
+
+.editor-host .cm-scroller {
+  line-height: var(--editor-line-height);
 }
 
 .editor-empty h1 {
@@ -177,8 +197,8 @@ body {
     display: none;
   }
 
-  .editor-pane {
-    padding: 20px;
+  .editor-empty {
+    padding: 0 20px 20px;
   }
 }
 
