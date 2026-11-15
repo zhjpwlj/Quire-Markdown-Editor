@@ -7,6 +7,9 @@ import { FileModel } from './vault/FileModel.js'
 import { renameEntry, validateName } from './vault/rename.js'
 import { LinkIndex } from './index/LinkIndex.js'
 import { EditorController } from './editor/EditorController.js'
+import { RenderPipeline } from './render/RenderPipeline.js'
+import { blobUrlsFor, releaseBlobUrls } from './render/blobUrlRegistry.js'
+import { sanitize } from './render/sanitize.js'
 import { Sidebar } from './ui/Sidebar.js'
 import { askRename, askLinkRewrite } from './ui/RenameModal.js'
 import { askNewName } from './ui/NewNoteModal.js'
@@ -33,9 +36,24 @@ editorHost.className = 'editor-host'
 editorHost.hidden = true
 editorPane.append(editorHost)
 
+// Dev-only until M30a restyles the toolbar.
+const modeToggle = document.getElementById('mode-toggle')
+if (import.meta.env.DEV) {
+  modeToggle.hidden = false
+  modeToggle.addEventListener('click', () => {
+    if (!controller) return
+    const next = controller.mode === 'preview' ? 'source' : 'preview'
+    controller.setMode(next)
+    modeToggle.textContent = next === 'preview' ? 'Edit' : 'Preview'
+  })
+}
+
 let fileModel = null
 let controller = null
 let currentPath = null
+
+// Resolver reads the vault's attachment cache; the embed tokenizer must stay synchronous.
+const pipeline = new RenderPipeline({ resolveFile: (path) => fileModel?.attachment(path) ?? null })
 
 const join = (...parts) => parts.filter(Boolean).join('/')
 const parentOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '')
@@ -80,6 +98,7 @@ async function openNote(path) {
     onChange: (content) => {
       if (currentPath) fileModel.writeNote(currentPath, content)
     },
+    renderPreview: (content) => pipeline.render(content),
   })
   controller.load(note.content, path)
   controller.focus()
@@ -208,6 +227,7 @@ async function openVault(record) {
   fileModel = new FileModel(record.id)
   window.__quire.fileModel = fileModel
   currentPath = null
+  await fileModel.loadAttachments()
   await sidebar.setFileModel(fileModel)
 
   const notes = await fileModel.listNotes()
@@ -242,6 +262,10 @@ window.__quire = {
   trash,
   vault,
   fileModel: null,
+  pipeline,
+  sanitize,
+  blobUrlsFor,
+  releaseBlobUrls,
   LinkIndex,
   validateName,
   sidebar,

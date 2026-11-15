@@ -2,7 +2,7 @@
 
 Local-first markdown notes that sync to your cloud. Installable PWA, plain markdown in OPFS, opt-in sync and encryption.
 
-Status: **Milestone 4 — sidebar and navigation.** Folder tree, pointer drag-and-drop, rename, duplicate and delete (to trash) work against OPFS. No preview, search, sync, or auth yet.
+Status: **Milestone 5 — preview pipeline.** Markdown renders to sanitized HTML with wiki-links, embeds, tags and heading anchors; a dev-only toggle switches the editor to read-only preview. No search, sync, or auth yet.
 
 ## Run
 
@@ -63,6 +63,16 @@ Until then, the `/oauth/callback` page is a stub.
 - Deleting a note or folder moves it to `.trash/`; `.trash/` is never shown in the tree.
 - Filenames are validated, not sanitized: `/`, `\`, `:`, control characters, and trailing space or dot are rejected with a visible error.
 
+## Preview pipeline (M5)
+
+- `RenderPipeline.render(markdown)` returns `{ html, links, embeds, headings, renderId }`. A fresh `Marked` instance per render keeps heading counters and blob sets isolated.
+- Wiki-links (`[[note]]`, `[[note|display]]`, `[[note#heading]]`) render as `.wikilink`; until M6 resolves targets they also carry `.wikilink-unresolved`.
+- Embeds (`![[image.png]]`, `![[file.pdf]]`) use `blob:` URLs from the vault's attachment cache. Missing files keep the original `![[...]]` text in `.embed-missing`.
+- Blob URLs live in one `Set` per render. `releaseBlobUrls(renderId)` revokes exactly that set; opening and closing preview balances create/revoke counts.
+- HTML is sanitized with an explicit DOMPurify whitelist (`ALLOWED_TAGS`/`ALLOWED_ATTR`), `ALLOW_DATA_ATTR: false`, and a URI regexp that permits `blob:`. Scripts, frames, event handlers and `javascript:` URLs are stripped.
+- Heading ids are slugified and de-duplicated (`-1`, `-2`). DOMPurify's DOM-clobbering guard drops ids such as `title`, so headings render with a `data-heading-id` placeholder that becomes the real id after sanitization.
+- Tags follow the whitespace-or-line-start rule; `#fragment` inside a URL is not a tag.
+
 ## Decisions taken in M1
 
 - Plain JavaScript, Vite, no UI framework. Revisit TypeScript before the sync/provider work if type drift starts to hurt.
@@ -74,8 +84,8 @@ Until then, the `/oauth/callback` page is a stub.
 
 ## Verified
 
-- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~588 KB, CodeMirror included).
-- `npm test`: 24 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys), the M3 editor list (debounced write, pagehide flush, frontmatter round-trip, mtime/size after restart, dirty flag, single editor instance, no CodeMirror warnings), and the M4 sidebar list (drag into folder, rename, 60-link cancel, delete to trash, natural sort, empty folder, filename validation).
+- `npm run check`: manifest fields and icon dimensions, CSP origins present, no placeholder leaked, every emitted JS/CSS precached, payload under 10 MB (currently ~674 KB, CodeMirror, marked and DOMPurify included).
+- `npm test`: 32 e2e tests pass — offline reload served by the worker, CSP blocks foreign origins, manifest shape, fixed-body scroll, long-press debug log, the M2 storage acceptance list (restart persistence, trash, vault order/delete, eviction recovery, `persist() === false`, localStorage keys), the M3 editor list (debounced write, pagehide flush, frontmatter round-trip, mtime/size after restart, dirty flag, single editor instance, no CodeMirror warnings), the M4 sidebar list (drag into folder, rename, 60-link cancel, delete to trash, natural sort, empty folder, filename validation), and the M5 preview list (all extensions, unresolved links, missing embeds, script and on* stripping, blob URL balance and isolation, stable heading ids).
 
 ## Not verified (needs hardware)
 

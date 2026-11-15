@@ -430,3 +430,129 @@ body {
   font: inherit;
   cursor: pointer;
 }
+
+/* Preview (M5) */
+.mode-toggle {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mode-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+/* The sync status keeps its own margin-left:auto elsewhere; when the toggle is visible it wins. */
+.mode-toggle:not([hidden]) + .sync-status {
+  margin-left: 0;
+}
+
+.editor-source {
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-source .cm-editor {
+  height: 100%;
+}
+
+.editor-preview {
+  height: 100%;
+  max-width: 78ch;
+  margin: 0 auto;
+  padding: 24px 32px 96px;
+  overflow: auto;
+  line-height: 1.7;
+}
+
+.editor-preview > :first-child {
+  margin-top: 0;
+}
+
+.editor-preview h1,
+.editor-preview h2,
+.editor-preview h3,
+.editor-preview h4 {
+  line-height: 1.3;
+}
+
+.editor-preview a {
+  color: var(--syntax-link);
+}
+
+.editor-preview code {
+  padding: 1px 4px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-family: var(--editor-font-family);
+  font-size: 0.9em;
+}
+
+.editor-preview pre {
+  padding: 12px 14px;
+  overflow: auto;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.editor-preview pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.editor-preview blockquote {
+  margin: 0;
+  padding-left: 14px;
+  border-left: 3px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.editor-preview img {
+  max-width: 100%;
+}
+
+.editor-preview table {
+  border-collapse: collapse;
+}
+
+.editor-preview th,
+.editor-preview td {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+}
+
+.editor-preview .wikilink {
+  text-decoration: none;
+}
+
+.editor-preview .wikilink-unresolved {
+  color: var(--text-muted);
+  border-bottom: 1px dashed var(--text-muted);
+}
+
+.editor-preview .embed-missing {
+  color: #ff6b6b;
+}
+
+.editor-preview .embed-file {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.editor-preview .tag {
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--syntax-tag) 16%, transparent);
+  border-radius: 999px;
+  color: var(--syntax-tag);
+  font-size: 0.9em;
+  text-decoration: none;
+}

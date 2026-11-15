@@ -1,4 +1,4 @@
-import { createFolder, deleteFile, listFiles, moveDirectory, readFile, statFile, vaultPath, writeFile } from '../storage/opfs.js'
+import { createFolder, deleteFile, getFileObject, listFiles, moveDirectory, readFile, statFile, vaultPath, writeFile } from '../storage/opfs.js'
 import { moveToTrash, trashStamp } from '../storage/trash.js'
 import { createAutosave, installFlushHooks } from '../editor/autosave.js'
 
@@ -25,6 +25,8 @@ export class FileModel {
   constructor(vaultId) {
     this.vaultId = vaultId
     this.notes = new Map()
+    // Attachment File objects, populated on vault open so the embed tokenizer stays synchronous.
+    this.attachments = new Map()
     this.autosave = createAutosave(
       // shortcut: non-atomic write; a crash mid-write can truncate. Atomic rename was deferred
       // from M2 and is still pending a caller that flushes on crash-sensitive paths.
@@ -195,6 +197,25 @@ export class FileModel {
       .filter((entry) => !['.quire', '.trash'].includes(entry.path))
       .filter((entry) => !entry.path.startsWith('.quire/') && !entry.path.startsWith('.trash/'))
       .filter((entry) => entry.kind === 'folder' || /\.md$/i.test(entry.path))
+  }
+
+  // §M5: the embed tokenizer is synchronous, so attachment Files are preloaded per vault.
+  async loadAttachments() {
+    this.attachments.clear()
+    const base = vaultPath(this.vaultId)
+    const entries = await listFiles(base, { recursive: true })
+    for (const entry of entries) {
+      if (entry.kind !== 'file' || /\.md$/i.test(entry.path)) continue
+      const rel = entry.path.slice(base.length + 1)
+      if (rel.startsWith('.quire/') || rel.startsWith('.trash/')) continue
+      const file = await getFileObject(entry.path)
+      if (file) this.attachments.set(rel, file)
+    }
+    return this.attachments.size
+  }
+
+  attachment(path) {
+    return this.attachments.get(path) ?? null
   }
 
   async flush() {

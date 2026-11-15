@@ -39,8 +39,17 @@ export async function writeFile(path, content) {
   await stream.close()
 }
 
-export async function statFile(path) {
+// Returns the File itself (not text) so embeds can create blob URLs.
+export async function getFileObject(path) {
   try {
+    return await (await getFileHandle(path)).getFile()
+  } catch (error) {
+    if (error.name === 'NotFoundError') return null
+    throw error
+  }
+}
+
+export async function statFile(path) {  try {
     const file = await (await getFileHandle(path)).getFile()
     return { size: file.size, lastModified: file.lastModified }
   } catch (error) {
